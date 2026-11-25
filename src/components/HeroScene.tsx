@@ -21,7 +21,7 @@ function ParticleField() {
       positions.set([x, y, z], i3)
       homes.set([x, y, z], i3)
       seeds[i] = Math.random()
-      const color = new THREE.Color(Math.random() < 0.58 ? '#ffb86b' : '#b58cff')
+      const color = new THREE.Color('#ffffff')
       colors.set([color.r, color.g, color.b], i3)
     }
     const result = new THREE.BufferGeometry()
@@ -183,7 +183,11 @@ export function HeroScene() {
   useFrameDomParallax(backgroundRef, pointer)
   const quality = matchMedia('(pointer: coarse)').matches ? 0.65 : 1
   return <div className="hero-scene">
-    <div className="hero-scene-backdrop" ref={backgroundRef} />
+    <div
+      className="hero-scene-backdrop"
+      ref={backgroundRef}
+      style={{ backgroundImage: `linear-gradient(180deg,rgba(3,4,6,.08),rgba(3,4,6,.26) 55%,#08090a 100%),url("${import.meta.env.BASE_URL}images/deep-space.png")` }}
+    />
     <div className="hero-scene-canvas">
       <Canvas dpr={quality} camera={{ position: [0, 0, 6.5], fov: 47 }} gl={{ alpha: true, antialias: true, powerPreference: 'high-performance' }}>
         <Scene />
