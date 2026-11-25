@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { CustomCursor, FixedInterface, SmoothScroll } from './components/GlobalSystems'
 import { HeroScene } from './components/HeroScene'
+import { OpeningSequence } from './components/OpeningSequence'
+import type { Locale } from './i18n'
 import { useMotionStore } from './store/motion'
 
 gsap.registerPlugin(ScrollTrigger)
@@ -646,56 +648,69 @@ function CaveExplorer() {
 }
 
 export default function App() {
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches
+  const [opening, setOpening] = useState(!reducedMotion)
+  const [locale, setLocale] = useState<Locale>(() => navigator.language.toLowerCase().startsWith('zh') ? 'zh' : 'en')
+  const finishOpening = useCallback(() => setOpening(false), [])
+  const enableSound = useCallback(() => {
+    document.querySelector<HTMLButtonElement>('.sound-toggle')?.click()
+  }, [])
+
   useEffect(() => {
-    const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (opening || reducedMotion) return
+    const entrance = gsap.fromTo(
+      ['.fixed-header', '.foundation-intro .eyebrow', '.foundation-intro h1', '.hero-subtitle', '.scroll-cue', '.sound-toggle'],
+      { y: 8, opacity: 0 },
+      { y: 0, opacity: 1, duration: 0.55, stagger: 0.08, ease: 'power2.out', clearProps: 'all' },
+    )
+    return () => { entrance.kill() }
+  }, [opening, reducedMotion])
+
+  useEffect(() => {
     const intro = document.querySelector<HTMLElement>('.foundation-intro')
     const heading = document.querySelector<HTMLElement>('.foundation-intro h1')
     const eyebrow = document.querySelector<HTMLElement>('.eyebrow')
     const subtitle = document.querySelector<HTMLElement>('.hero-subtitle')
-    if (!intro || !heading || !eyebrow || !subtitle) return
+    if (opening || reducedMotion || !intro || !heading || !eyebrow || !subtitle) return
     const cleanups: Array<() => void> = []
-    if (!reducedMotion) {
-      const opening = gsap.timeline({ defaults: { ease: 'power3.out' } })
-      opening.fromTo(eyebrow, { y: 22, opacity: 0 }, { y: 0, opacity: 1, duration: 0.75 })
-        .fromTo(heading, { y: 70, opacity: 0, clipPath: 'inset(0 0 100% 0)' }, { y: 0, opacity: 1, clipPath: 'inset(0 0 0% 0)', duration: 1.15 }, '-=0.25')
-        .fromTo(subtitle, { y: 18, opacity: 0 }, { y: 0, opacity: 0.82, duration: 0.7 }, '-=0.45')
-      const introMotion = gsap.timeline({ scrollTrigger: { trigger: intro, start: 'top top', end: 'bottom top', scrub: 0.8 } })
-      introMotion.to(heading, { yPercent: -48, scale: 0.72, opacity: 0.12, ease: 'none' }, 0)
-        .to(eyebrow, { y: -70, opacity: 0, ease: 'none' }, 0)
-        .to(subtitle, { y: -24, opacity: 0, ease: 'none' }, 0)
-        .to(intro, { backgroundPosition: 'center 55%', ease: 'none' }, 0)
-      cleanups.push(() => { opening.kill(); introMotion.scrollTrigger?.kill(); introMotion.kill() })
+    const introMotion = gsap.timeline({ scrollTrigger: { trigger: intro, start: 'top top', end: 'bottom top', scrub: 0.8 } })
+    introMotion.to(heading, { yPercent: -48, scale: 0.72, opacity: 0.12, ease: 'none' }, 0)
+      .to(eyebrow, { y: -70, opacity: 0, ease: 'none' }, 0)
+      .to(subtitle, { y: -24, opacity: 0, ease: 'none' }, 0)
+      .to(intro, { backgroundPosition: 'center 55%', ease: 'none' }, 0)
+    cleanups.push(() => { introMotion.scrollTrigger?.kill(); introMotion.kill() })
 
-      gsap.utils.toArray<HTMLElement>('.project-row').forEach((row, index) => {
-        const animation = gsap.fromTo(row,
-          { clipPath: 'inset(0 0 32% 0)', y: 90, x: index === 1 ? 54 : -54, opacity: 0.18, scale: 0.96 },
-          { clipPath: 'inset(0 0 0% 0)', y: 0, x: 0, opacity: 1, scale: 1, ease: 'none', scrollTrigger: { trigger: row, start: 'top 88%', end: 'top 38%', scrub: 0.8 } },
-        )
-        cleanups.push(() => { animation.scrollTrigger?.kill(); animation.kill() })
-      })
-      const about = gsap.fromTo('.about-copy > *', { y: 46, opacity: 0.15 }, {
-        y: 0, opacity: 1, stagger: 0.12, ease: 'none',
-        scrollTrigger: { trigger: '.about-section', start: 'top 78%', end: 'center 55%', scrub: 0.7 },
-      })
-      const wordReveal = gsap.fromTo('.about-copy .word', { opacity: 0.28 }, {
-        opacity: 1, stagger: 0.2, ease: 'none',
-        scrollTrigger: { trigger: '.about-section', start: 'top 72%', end: 'center 46%', scrub: 0.8 },
-      })
-      const footer = gsap.fromTo('.contact-section > *', { y: 34, opacity: 0.25 }, {
-        y: 0, opacity: 1, stagger: 0.1, ease: 'none',
-        scrollTrigger: { trigger: '.contact-section', start: 'top 85%', end: 'center 60%', scrub: 0.6 },
-      })
-      cleanups.push(() => { about.scrollTrigger?.kill(); about.kill(); wordReveal.scrollTrigger?.kill(); wordReveal.kill(); footer.scrollTrigger?.kill(); footer.kill() })
-    }
+    gsap.utils.toArray<HTMLElement>('.project-row').forEach((row, index) => {
+      const animation = gsap.fromTo(row,
+        { clipPath: 'inset(0 0 32% 0)', y: 90, x: index === 1 ? 54 : -54, opacity: 0.18, scale: 0.96 },
+        { clipPath: 'inset(0 0 0% 0)', y: 0, x: 0, opacity: 1, scale: 1, ease: 'none', scrollTrigger: { trigger: row, start: 'top 88%', end: 'top 38%', scrub: 0.8 } },
+      )
+      cleanups.push(() => { animation.scrollTrigger?.kill(); animation.kill() })
+    })
+    const about = gsap.fromTo('.about-copy > *', { y: 46, opacity: 0.15 }, {
+      y: 0, opacity: 1, stagger: 0.12, ease: 'none',
+      scrollTrigger: { trigger: '.about-section', start: 'top 78%', end: 'center 55%', scrub: 0.7 },
+    })
+    const wordReveal = gsap.fromTo('.about-copy .word', { opacity: 0.28 }, {
+      opacity: 1, stagger: 0.2, ease: 'none',
+      scrollTrigger: { trigger: '.about-section', start: 'top 72%', end: 'center 46%', scrub: 0.8 },
+    })
+    const footer = gsap.fromTo('.contact-section > *', { y: 34, opacity: 0.25 }, {
+      y: 0, opacity: 1, stagger: 0.1, ease: 'none',
+      scrollTrigger: { trigger: '.contact-section', start: 'top 85%', end: 'center 60%', scrub: 0.6 },
+    })
+    cleanups.push(() => { about.scrollTrigger?.kill(); about.kill(); wordReveal.scrollTrigger?.kill(); wordReveal.kill(); footer.scrollTrigger?.kill(); footer.kill() })
     return () => cleanups.forEach((cleanup) => cleanup())
-  }, [])
+  }, [opening, reducedMotion])
 
   return (
     <>
       <SmoothScroll />
-      <FixedInterface />
+      <div className={opening ? 'site-interface is-hidden' : 'site-interface'}>
+        <FixedInterface />
+      </div>
       <CustomCursor />
-      <main id="top" className="foundation-stage">
+      <main id="top" className={`foundation-stage${opening ? ' is-opening' : ''}`}>
         <section className="foundation-intro" aria-label="Portfolio introduction">
           <HeroScene />
           <span className="eyebrow">INDEPENDENT DESIGN PRACTICE · 2026</span>
@@ -728,6 +743,7 @@ export default function App() {
           <small>© 2026 · PORTFOLIO</small>
         </footer>
       </main>
+      {opening && <OpeningSequence locale={locale} onLocaleChange={setLocale} onComplete={finishOpening} onEnableSound={enableSound} />}
     </>
   )
 }
