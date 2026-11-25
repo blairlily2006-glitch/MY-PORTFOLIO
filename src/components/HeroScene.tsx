@@ -44,7 +44,7 @@ function ParticleField() {
       void main(){
         vec4 mv=modelViewMatrix*vec4(position,1.0);
         gl_Position=projectionMatrix*mv;
-        gl_PointSize=(0.8+aSeed*1.4)*uPixelRatio*(36.0/-mv.z);
+        gl_PointSize=(0.64+aSeed*1.12)*uPixelRatio*(36.0/-mv.z);
         vSeed=aSeed; vColor=aColor; vVelocity=aVelocity.xy;
       }`,
     fragmentShader: `
