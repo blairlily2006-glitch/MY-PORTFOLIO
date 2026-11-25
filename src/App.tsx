@@ -26,7 +26,7 @@ const CONFIG = {
   cave: {
     radius: 180,
     decayMs: 2200,
-    maxBrightness: 0.84,
+    maxBrightness: 0.5,
     followMs: 95,
     radiusFollow: 0.16,
     warmGlow: 0.075,
@@ -395,7 +395,7 @@ function CaveExplorer() {
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
     const finePointer = matchMedia('(pointer: fine)').matches
     const cave = new Image()
-    cave.src = `${import.meta.env.BASE_URL}assets/cave_clean.png`
+    cave.src = `${import.meta.env.BASE_URL}images/galaxy-exploration.png`
     const trailCanvas = document.createElement('canvas')
     const trail = trailCanvas.getContext('2d')
     const maskCanvas = document.createElement('canvas')
