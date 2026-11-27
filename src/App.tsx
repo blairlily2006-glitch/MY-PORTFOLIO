@@ -652,10 +652,6 @@ export default function App() {
   const [opening, setOpening] = useState(!reducedMotion)
   const [locale, setLocale] = useState<Locale>(() => navigator.language.toLowerCase().startsWith('zh') ? 'zh' : 'en')
   const finishOpening = useCallback(() => setOpening(false), [])
-  const enableSound = useCallback(() => {
-    document.querySelector<HTMLButtonElement>('.sound-toggle')?.click()
-  }, [])
-
   useEffect(() => {
     if (opening || reducedMotion) return
     const entrance = gsap.fromTo(
@@ -743,7 +739,7 @@ export default function App() {
           <small>© 2026 · PORTFOLIO</small>
         </footer>
       </main>
-      {opening && <OpeningSequence locale={locale} onLocaleChange={setLocale} onComplete={finishOpening} onEnableSound={enableSound} />}
+      {opening && <OpeningSequence locale={locale} onLocaleChange={setLocale} onComplete={finishOpening} />}
     </>
   )
 }

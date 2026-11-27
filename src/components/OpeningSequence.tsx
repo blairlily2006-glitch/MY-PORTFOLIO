@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
 import { CONFIG } from '../config'
 import { OPENING_COPY, type Locale } from '../i18n'
@@ -9,28 +9,37 @@ type Props = {
   locale: Locale
   onLocaleChange: (locale: Locale) => void
   onComplete: () => void
-  onEnableSound: () => void
 }
 
 function BrandMark({ progress }: { progress: number }) {
   return (
-    <svg className="opening-mark" viewBox="0 0 120 120" role="img" aria-label="Portfolio mark">
-      <path
-        pathLength="100"
-        d="M18 34 34 86 49 49 62 86 78 34M72 34h31M72 60h25M72 86h31M108 34v52"
-        style={{ strokeDasharray: 100, strokeDashoffset: 100 - progress }}
-      />
-    </svg>
+    <span className="opening-brand" aria-hidden="true">
+      <span className="opening-brand-symbol"><i /><i /></span>
+      <span className="opening-brand-name">PORTFOLIO</span>
+      <span className="opening-brand-progress"><i style={{ transform: `scaleX(${progress / 100})` }} /></span>
+    </span>
   )
 }
 
-export function OpeningSequence({ locale, onLocaleChange, onComplete, onEnableSound }: Props) {
+export function OpeningSequence({ locale, onLocaleChange, onComplete }: Props) {
   const rootRef = useRef<HTMLDivElement>(null)
   const timelineRef = useRef<gsap.core.Timeline | null>(null)
+  const enteringRef = useRef(false)
   const reducedMotion = useRef(matchMedia('(prefers-reduced-motion: reduce)').matches)
   const [phase, setPhase] = useState<'flash' | 'loading'>(reducedMotion.current ? 'loading' : 'flash')
   const [progress, setProgress] = useState(0)
   const copy = OPENING_COPY[locale]
+  const enter = useCallback(() => {
+    if (enteringRef.current) return
+    enteringRef.current = true
+    timelineRef.current?.kill()
+    const root = rootRef.current
+    if (!root) {
+      onComplete()
+      return
+    }
+    gsap.to(root, { autoAlpha: 0, duration: 0.4, ease: 'power2.out', onComplete })
+  }, [onComplete])
 
   useEffect(() => {
     document.body.classList.add('opening-active')
@@ -46,7 +55,11 @@ export function OpeningSequence({ locale, onLocaleChange, onComplete, onEnableSo
     let easedProgress = 0
     let frame = 0
     let active = true
-    const images = ASSETS_TO_PRELOAD.map((path) => {
+    let images: HTMLImageElement[] = []
+    const preloadTimeout = window.setTimeout(() => {
+      loaded = ASSETS_TO_PRELOAD.length
+    }, CONFIG.opening.assetTimeoutMs)
+    images = ASSETS_TO_PRELOAD.map((path) => {
       const image = new Image()
       let settled = false
       const settle = () => {
@@ -95,6 +108,7 @@ export function OpeningSequence({ locale, onLocaleChange, onComplete, onEnableSo
       active = false
       clearTimeout(flashTimer)
       cancelAnimationFrame(frame)
+      clearTimeout(preloadTimeout)
       timelineRef.current?.kill()
       gsap.killTweensOf(root)
       gsap.killTweensOf('.opening-loading-copy, .opening-mark-wrap, .hero-scene-backdrop')
@@ -104,7 +118,14 @@ export function OpeningSequence({ locale, onLocaleChange, onComplete, onEnableSo
   }, [onComplete])
 
   return (
-    <div ref={rootRef} className={`opening-sequence${phase === 'flash' ? ' is-flash' : ' is-loading'}`} aria-live="polite">
+    <div
+      ref={rootRef}
+      className={`opening-sequence${phase === 'flash' ? ' is-flash' : ' is-loading'}`}
+      aria-live="polite"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) enter()
+      }}
+    >
       {phase === 'loading' && (
         <>
           <div className="opening-language" aria-label={copy.language}>
@@ -116,10 +137,10 @@ export function OpeningSequence({ locale, onLocaleChange, onComplete, onEnableSo
             <span>{copy.loading}</span>
             <span className="opening-progress">{progress.toString().padStart(2, '0')}<i>%</i></span>
           </div>
-          <div className="opening-mark-wrap"><BrandMark progress={progress} /></div>
-          <button className="opening-sound-prompt" type="button" onClick={onEnableSound}>
-            <span aria-hidden="true">•</span> {copy.clickSound}
+          <button className="opening-mark-wrap" type="button" aria-label={copy.enter} onClick={enter}>
+            <BrandMark progress={progress} />
           </button>
+          <button className="opening-enter" type="button" onClick={enter}>{copy.enter}<span aria-hidden="true">↗</span></button>
         </>
       )}
     </div>

@@ -2,6 +2,7 @@ export const CONFIG = {
   opening: {
     whiteFlashMs: 800,
     minLoadingMs: 1100,
+    assetTimeoutMs: 8000,
     progressEase: 0.075,
     labelFadeSeconds: 0.3,
     markHoldSeconds: 0.4,
